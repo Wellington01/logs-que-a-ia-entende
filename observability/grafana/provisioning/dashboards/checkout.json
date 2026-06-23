@@ -4,7 +4,7 @@
   "tags": ["demo", "checkout", "logs", "ia"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": { "from": "now-15m", "to": "now" },
   "templating": { "list": [] },
@@ -34,12 +34,13 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Requisições (5m)",
+      "title": "Sucesso (5m)",
       "datasource": { "type": "loki", "uid": "loki" },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "range", "refId": "A",
-        "expr": "sum(count_over_time({service_name=\"checkout-service\"} | event=~\".+\" [5m]))" } ]
+        "expr": "sum(count_over_time({service_name=\"checkout-service\"} | outcome=\"success\" [5m]))" } ]
     },
     {
       "id": 3,
@@ -54,43 +55,59 @@
     },
     {
       "id": 4,
-      "type": "piechart",
-      "title": "Eventos por tipo",
+      "type": "stat",
+      "title": "Requisições (5m)",
       "datasource": { "type": "loki", "uid": "loki" },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "options": { "legend": { "displayMode": "list", "placement": "right" }, "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "instant", "refId": "A", "legendFormat": "{{event}}",
-        "expr": "sum by (event) (count_over_time({service_name=\"checkout-service\"} | event=~\".+\" [$__range]))" } ]
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area" },
+      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "range", "refId": "A",
+        "expr": "sum(count_over_time({service_name=\"checkout-service\"} | event=~\".+\" [5m]))" } ]
     },
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Erros por minuto (o pico de incidente)",
+      "title": "Sucesso vs Erro (req/min)",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1 }, "color": { "mode": "fixed", "fixedColor": "red" } } },
-      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "range", "refId": "A", "legendFormat": "erros/min",
-        "expr": "sum(count_over_time({service_name=\"checkout-service\"} | outcome=\"error\" [1m]))" } ]
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "stacking": { "mode": "normal" } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "success" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
+          { "matcher": { "id": "byName", "options": "error" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
+        ]
+      },
+      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "range", "refId": "A", "legendFormat": "{{outcome}}",
+        "expr": "sum by (outcome) (count_over_time({service_name=\"checkout-service\"} | outcome=~\".+\" [1m]))" } ]
     },
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Erros por código",
+      "title": "Erros por código (o pico de incidente)",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
       "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 70, "stacking": { "mode": "normal" } } } },
       "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "range", "refId": "A", "legendFormat": "{{error_code}}",
         "expr": "sum by (error_code) (count_over_time({service_name=\"checkout-service\"} | error_code=~\".+\" [1m]))" } ]
     },
     {
       "id": 7,
-      "type": "logs",
-      "title": "Erros recentes (clica → trace_id leva pro Tempo)",
+      "type": "piechart",
+      "title": "Eventos por tipo",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 12 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 13 },
+      "options": { "legend": { "displayMode": "list", "placement": "right" }, "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "instant", "refId": "A", "legendFormat": "{{event}}",
+        "expr": "sum by (event) (count_over_time({service_name=\"checkout-service\"} | event=~\".+\" [$__range]))" } ]
+    },
+    {
+      "id": 8,
+      "type": "logs",
+      "title": "Logs recentes (clica → trace_id leva pro Tempo · stack no detalhe)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 13 },
       "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Descending", "dedupStrategy": "none" },
       "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "code", "queryType": "range", "refId": "A",
-        "expr": "{service_name=\"checkout-service\"} | outcome=\"error\"" } ]
+        "expr": "{service_name=\"checkout-service\"}" } ]
     }
   ]
 }
