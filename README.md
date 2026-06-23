@@ -1,8 +1,13 @@
-# Demo — Logs que a IA entende (Pino + OpenTelemetry)
+# Logs que a IA entende — Pino + OpenTelemetry
 
-Demo rodável da palestra. Um `checkout-service` em Node.js que mostra o "antes e
-depois": de `console.log` espalhado para **wide events** estruturados,
-correlacionados com **OpenTelemetry** e com **redaction** de dados sensíveis.
+Repo da palestra **"Logs que a IA entende: observabilidade em Node.js com Pino +
+OpenTelemetry"** (Esquenta JSConf Brasil 2026).
+
+📊 **Slides:** [`SLIDES.pdf`](./SLIDES.pdf) (fonte Marp: [`SLIDES.md`](./SLIDES.md))
+
+Demo rodável: um `checkout-service` em Node.js que mostra o "antes e depois": de
+`console.log` espalhado para **wide events** estruturados, correlacionados com
+**OpenTelemetry** e com **redaction** de dados sensíveis.
 
 ## Rodar
 
