@@ -1,0 +1,73 @@
+# Stack de observabilidade completa pra demo ao vivo:
+#   app (checkout-service) -> OTLP (logs + traces) -> OTel Collector
+#                                                       ├─> Loki  (logs)
+#                                                       └─> Tempo (traces)
+#   Grafana lê Loki + Tempo, com trace_id CLICÁVEL ligando log -> trace.
+#
+#   docker compose up --build -d
+#   Grafana:  http://localhost:3081   (login anônimo, já entra como admin)
+#   App:      http://localhost:3737
+#
+#   Gere tráfego:
+#     curl -XPOST localhost:3737/checkout -H 'content-type: application/json' -d '{"userId":"u_1001","coupon":"SUPER90"}'
+
+services:
+  app:
+    build: .
+    environment:
+      PORT: "3000"
+      NODE_ENV: production
+      SERVICE_VERSION: "2.3.1"
+      COMMIT_SHA: "a1b2c3d"
+      REGION: "sa-east-1"
+      # Manda TUDO (log + trace) pro Collector, não direto pro Tempo.
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+    ports:
+      - "3737:3000"
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.119.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol/config.yaml
+    depends_on:
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:3.4.1
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./observability/loki-config.yml:/etc/loki/loki-config.yml
+    ports:
+      - "3100:3100"
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    command: -config.file=/etc/tempo/tempo-config.yml
+    user: root
+    volumes:
+      - ./observability/tempo-config.yml:/etc/tempo/tempo-config.yml
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"   # query (recebe traces do Collector via rede interna)
+
+  grafana:
+    image: grafana/grafana:11.5.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3081:3000"
+    depends_on:
+      - loki
+      - tempo
+
+volumes:
+  tempo-data:

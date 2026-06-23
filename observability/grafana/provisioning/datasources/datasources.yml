@@ -1,0 +1,39 @@
+apiVersion: 1
+
+datasources:
+  # ----------------------------------------------------------------------------
+  # LOKI (logs). Logs chegam via OTLP (Collector), então o trace_id vem como
+  # structured metadata. O derivedFields com matcherType: label transforma o
+  # campo `trace_id` num LINK clicável pro Tempo. Log -> trace com um clique.
+  # ----------------------------------------------------------------------------
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      derivedFields:
+        - name: trace_id
+          matcherType: label
+          matcherRegex: 'trace_id'
+          url: '$${__value.raw}'
+          datasourceUid: tempo
+          urlDisplayLabel: 'Ver trace no Tempo'
+
+  # ----------------------------------------------------------------------------
+  # TEMPO (traces). O tracesToLogsV2 faz o caminho de volta: do trace você pula
+  # pros logs daquela mesma requisição.
+  # ----------------------------------------------------------------------------
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: true
+      serviceMap:
+        datasourceUid: loki

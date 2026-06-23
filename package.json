@@ -1,0 +1,27 @@
+{
+  "name": "demo-logs-que-a-ia-entende",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Demo da palestra: Logs que a IA entende — observabilidade em Node.js com Pino + OpenTelemetry",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node -r ./src/tracing.js src/server.js",
+    "dev": "LOG_PRETTY=1 node -r ./src/tracing.js src/server.js",
+    "pretty": "node -r ./src/tracing.js src/server.js | npx pino-pretty"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.77.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.219.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/resources": "^2.8.0",
+    "@opentelemetry/sdk-logs": "^0.219.0",
+    "@opentelemetry/sdk-node": "^0.219.0",
+    "@opentelemetry/semantic-conventions": "^1.41.0",
+    "express": "^5.2.0",
+    "pino": "^10.3.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.1.0"
+  }
+}
