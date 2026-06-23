@@ -73,7 +73,14 @@ app.post('/checkout', async (req, res) => {
   } catch (err) {
     ev.event = 'checkout.failed';
     ev.outcome = 'error';
-    ev.error = { message: err.message, type: err.name, code: err.code };
+    // STACK: é o que aponta a LINHA exata onde quebrou — ouro pra IA/debug.
+    // Em produção: sanitize o stack (pode conter dado sensível na mensagem).
+    ev.error = {
+      message: err.message,
+      type: err.name,
+      code: err.code,
+      stack: err.stack,
+    };
     res.status(500).json({ ok: false, error: 'checkout_failed' });
   }
 });

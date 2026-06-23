@@ -63,7 +63,8 @@ Uma única linha responde "quem, o quê, por quê":
   "user": { "id": "u_1001", "subscription": "premium", "account_age_days": 540 },
   "coupon": { "code": "SUPER90", "discount_cents": 9000 },
   "cart": { "item_count": 2, "subtotal_cents": 4990, "total_cents": -4010 },
-  "error": { "message": "invalid charge amount: -4010", "type": "Error", "code": "INVALID_AMOUNT" },
+  "error": { "message": "invalid charge amount: -4010", "type": "Error", "code": "INVALID_AMOUNT",
+             "stack": "Error: invalid charge amount: -4010\n  at charge (payment.js:16:17)" },
   "outcome": "error", "status_code": 500, "duration_ms": 36.88
 }
 ```
