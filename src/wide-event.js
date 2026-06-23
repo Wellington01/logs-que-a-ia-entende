@@ -28,20 +28,42 @@ function wideEvent(req, res, next) {
     path: req.path,
   };
 
-  // Emite UMA vez, quando a resposta termina — sucesso ou erro.
-  res.on('finish', () => {
-    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+  // Emite UMA vez só: 'finish' (resposta enviada) OU 'close' (cliente abortou
+  // / conexão caiu). Sem o 'close', requisição abortada não vira evento.
+  let emitted = false;
+  const emit = () => {
+    if (emitted) return; // os dois eventos podem disparar — emite só uma vez
+    emitted = true;
+
     const ev = req.wideEvent;
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
     ev.status_code = res.statusCode;
     ev.duration_ms = Math.round(durationMs * 100) / 100;
     if (!ev.outcome) ev.outcome = res.statusCode >= 500 ? 'error' : 'success';
 
-    if (ev.outcome === 'error' || res.statusCode >= 500) {
-      logger.error(ev, 'request completed');
-    } else {
-      logger.info(ev, 'request completed');
+    // PRODUÇÃO: logar NUNCA pode derrubar a request. Se a serialização estourar
+    // (circular ref, getter inválido num objeto exótico), cai no fallback.
+    try {
+      if (ev.outcome === 'error' || res.statusCode >= 500) {
+        logger.error(ev, 'request completed');
+      } else {
+        logger.info(ev, 'request completed');
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          msg: 'wide-event emit failed',
+          request_id: requestId,
+          error: err && err.message,
+        }),
+      );
     }
-  });
+  };
+
+  res.on('finish', emit); // resposta enviada com sucesso
+  res.on('close', emit); // conexão fechou (cliente desconectou / abortou)
 
   next();
 }

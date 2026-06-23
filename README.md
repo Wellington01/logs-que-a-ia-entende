@@ -21,6 +21,9 @@ a 3000 estava ocupada na máquina de teste — ajuste com `PORT=...`).
 
 > Variáveis de ambiente úteis pra demo:
 > `SERVICE_VERSION=2.3.1 COMMIT_SHA=a1b2c3d REGION=sa-east-1 NODE_ENV=production`
+>
+> Produção: `LOG_LEVEL=info` · `TRACE_SAMPLE_RATIO=0.1` (amostra 10% dos traces;
+> default 1 = 100%, ótimo pra demo).
 
 ## Os endpoints da demo
 

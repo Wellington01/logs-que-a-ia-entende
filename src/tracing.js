@@ -22,15 +22,29 @@ const {
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
 const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
 const { BatchLogRecordProcessor } = require('@opentelemetry/sdk-logs');
+const {
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} = require('@opentelemetry/sdk-trace-base');
 
 // Aponta pro Collector (ex.: http://otel-collector:4318). Sem ele, roda em
 // memória só pra correlação via trace_id no log.
 const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 
+// SAMPLING (produção): amostrar 100% dos traces pesa em escala (custo + overhead).
+// TRACE_SAMPLE_RATIO controla a fração: 1 = 100% (default, ótimo pra demo);
+// em prod, algo como 0.1 (10%). ParentBased respeita a decisão do serviço que
+// chamou — se a borda amostrou, o resto da requisição é amostrado junto.
+const sampleRatio = Number(process.env.TRACE_SAMPLE_RATIO ?? '1');
+
 const sdk = new NodeSDK({
   resource: resourceFromAttributes({
     [ATTR_SERVICE_NAME]: 'checkout-service',
     [ATTR_SERVICE_VERSION]: process.env.SERVICE_VERSION || 'dev',
+  }),
+
+  sampler: new ParentBasedSampler({
+    root: new TraceIdRatioBasedSampler(sampleRatio),
   }),
 
   // Traces -> Collector -> Tempo
@@ -53,6 +67,7 @@ const sdk = new NodeSDK({
 
 sdk.start();
 
-process.on('SIGTERM', () => {
-  sdk.shutdown().finally(() => process.exit(0));
-});
+// Shutdown gracioso: dá flush nos batches de trace/log antes de sair.
+const shutdown = () => sdk.shutdown().finally(() => process.exit(0));
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown); // Ctrl-C em dev também faz flush
